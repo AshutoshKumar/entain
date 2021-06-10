@@ -12,6 +12,8 @@ import (
 type Racing interface {
 	// ListRaces will return a collection of races.
 	ListRaces(ctx context.Context, in *racing.ListRacesRequest) (*racing.ListRacesResponse, error)
+	// ListRace will return a race.
+	RaceById(ctx context.Context, in *racing.RaceByIdRequest) (*racing.RaceByIdResponse, error)
 }
 
 // racingService implements the Racing interface.
@@ -43,4 +45,25 @@ func (s *racingService) ListRaces(ctx context.Context, in *racing.ListRacesReque
 	}
 
 	return &racing.ListRacesResponse{Races: races}, nil
+}
+
+func (s *racingService) RaceById(ctx context.Context, in *racing.RaceByIdRequest) (*racing.RaceByIdResponse, error) {
+	race, err := s.racesRepo.RaceById(in)
+	if err != nil {
+		return nil, err
+	}
+
+	if race != nil{
+			today := time.Now()
+			ts, _ := ptypes.Timestamp(race.AdvertisedStartTime)
+			after := ts.After(today)
+			if after {
+				race.Status = "OPEN"
+			}else {
+				race.Status = "CLOSED"
+			}
+	}
+
+
+	return &racing.RaceByIdResponse{Race: race}, nil
 }

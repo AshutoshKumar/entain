@@ -11,6 +11,10 @@ service Racing {
   rpc ListRaces(ListRacesRequest) returns (ListRacesResponse) {
     option (google.api.http) = { post: "/v1/list-races", body: "*" };
   }
+  // RaceById method get race by passed id.
+  rpc RaceById(RaceByIdRequest) returns (RaceByIdResponse){
+    option (google.api.http) = { get: "/v1/race-by-id/{id}" };
+    }
 }
 
 /* Requests/Responses */
@@ -49,4 +53,14 @@ message Race {
   google.protobuf.Timestamp advertised_start_time = 6;
   // All races that have an `advertised_start_time` in the past should reflect `CLOSED` OW OPEN.
   string status = 7;
+}
+
+// Request for Race yt ID.
+message RaceByIdRequest {
+   int64 id = 1;
+}
+
+// Response message based on passed ID.
+message RaceByIdResponse {
+    Race races = 1;
 }

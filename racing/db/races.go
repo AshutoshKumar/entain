@@ -6,6 +6,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"fmt"
 
 	_ "github.com/mattn/go-sqlite3"
 	"git.neds.sh/matty/entain/racing/proto/racing"
@@ -19,6 +20,9 @@ type RacesRepo interface {
 
 	// List will return a list of races.
 	List(filter *racing.ListRacesRequestFilter) ([]*racing.Race, error)
+
+	// RaceById return single race details.
+	RaceById(filter *racing.RaceByIdRequest) (*racing.Race, error)
 }
 
 type racesRepo struct {
@@ -62,6 +66,27 @@ func (r *racesRepo) List(filter *racing.ListRacesRequestFilter) ([]*racing.Race,
 	return r.scanRaces(rows)
 }
 
+func (r *racesRepo) RaceById(filter *racing.RaceByIdRequest) (*racing.Race, error) {
+	var (
+		err   error
+		query string
+		args  []interface{}
+
+	)
+
+	query = getRaceQueries()[racesList]
+
+	query, args = r.applyRaceByIdFilter(query, filter)
+
+	rows, err := r.db.Query(query, args...)
+
+	if err != nil {
+		return nil, err
+	}
+	race, err := r.scanRaces(rows)
+	return race[0], err
+}
+
 func (r *racesRepo) applyFilter(query string, filter *racing.ListRacesRequestFilter) (string, []interface{}) {
 	var (
 		clauses []string
@@ -92,6 +117,28 @@ func (r *racesRepo) applyFilter(query string, filter *racing.ListRacesRequestFil
 
 	if len(clauses) == 0 {
 		query += "Order by advertised_start_time"
+	}
+
+	return query, args
+}
+
+func (r *racesRepo) applyRaceByIdFilter(query string, filter *racing.RaceByIdRequest) (string, []interface{}) {
+	var (
+		clauses []string
+		args    []interface{}
+	)
+
+	if filter == nil {
+		return query, args
+	}
+	matchId := fmt.Sprintf("%v", filter.Id)
+
+	if matchId != "" {
+		clauses = append(clauses, "meeting_id="+matchId+"")
+	}
+
+	if len(clauses) != 0 {
+		query += " WHERE " + strings.Join(clauses, " AND ")
 	}
 
 	return query, args

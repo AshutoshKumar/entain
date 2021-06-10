@@ -8,6 +8,7 @@ import "google/protobuf/timestamp.proto";
 service Racing {
   // ListRaces will return a collection of all races.
   rpc ListRaces(ListRacesRequest) returns (ListRacesResponse) {}
+  rpc RaceById(RaceByIdRequest) returns (RaceByIdResponse) {}
 }
 
 /* Requests/Responses */
@@ -45,4 +46,14 @@ message Race {
   google.protobuf.Timestamp advertised_start_time = 6;
   // All races that have an `advertised_start_time` in the past should reflect `CLOSED` OW OPEN.
   string status = 7;
+}
+
+// Request for Race by ID.
+message RaceByIdRequest {
+   int64 id = 1;
+}
+
+// Response message based on passed ID.
+message RaceByIdResponse {
+    Race race = 1;
 }
