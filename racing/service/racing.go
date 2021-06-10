@@ -1,9 +1,12 @@
 package service
 
 import (
+	"golang.org/x/net/context"
+	"time"
+
+	"github.com/golang/protobuf/ptypes"
 	"git.neds.sh/matty/entain/racing/db"
 	"git.neds.sh/matty/entain/racing/proto/racing"
-	"golang.org/x/net/context"
 )
 
 type Racing interface {
@@ -25,6 +28,18 @@ func (s *racingService) ListRaces(ctx context.Context, in *racing.ListRacesReque
 	races, err := s.racesRepo.List(in.Filter)
 	if err != nil {
 		return nil, err
+	}
+
+	//update status based on the adversisement time
+	for _, race := range races {
+		today := time.Now()
+		ts, _ := ptypes.Timestamp(race.AdvertisedStartTime)
+		after := ts.After(today)
+		if after {
+			race.Status = "OPEN"
+		}else {
+			race.Status = "CLOSED"
+		}
 	}
 
 	return &racing.ListRacesResponse{Races: races}, nil
