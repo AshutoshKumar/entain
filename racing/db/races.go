@@ -80,12 +80,6 @@ func (r *racesRepo) applyFilter(query string, filter *racing.ListRacesRequestFil
 		}
 	}
 
-	//Filter based on the visibility parameter
-	if filter.Visible {
-		clauses = append(clauses, "visible=("+strconv.FormatBool(filter.Visible)+") Order by advertised_start_time")
-
-	}
-
 
 	if len(clauses) != 0 {
 		query += " WHERE " + strings.Join(clauses, " AND ")
