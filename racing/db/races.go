@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"fmt"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -82,12 +83,16 @@ func (r *racesRepo) applyFilter(query string, filter *racing.ListRacesRequestFil
 
 	//Filter based on the visibility parameter
 	if filter.Visible {
-		clauses = append(clauses, "visible=("+strconv.FormatBool(filter.Visible)+") Order by advertised_start_time")
+		clauses = append(clauses, "visible=("+strconv.FormatBool(filter.Visible)+")")
 
 	}
 
 	if len(clauses) != 0 {
-		query += " WHERE " + strings.Join(clauses, " AND ")
+		query += " WHERE " + strings.Join(clauses, " AND ") + " Order by advertised_start_time"
+	}
+
+	if len(clauses) == 0 {
+		query += "Order by advertised_start_time"
 	}
 
 	return query, args
