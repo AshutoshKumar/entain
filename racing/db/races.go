@@ -5,7 +5,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"fmt"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
