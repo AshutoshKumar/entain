@@ -3,9 +3,11 @@ package main
 import (
 	"database/sql"
 	"flag"
+
 	"git.neds.sh/matty/entain/racing/db"
 	"git.neds.sh/matty/entain/racing/proto/racing"
 	"git.neds.sh/matty/entain/racing/service"
+
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"net"
@@ -29,7 +31,7 @@ func run() error {
 		return err
 	}
 
-	racingDB, err := sql.Open("sqlite3", "./db/racing.db")
+	racingDB, err := sql.Open("sqlite3", "./db/sports.db")
 	if err != nil {
 		return err
 	}
@@ -41,12 +43,7 @@ func run() error {
 
 	grpcServer := grpc.NewServer()
 
-	racing.RegisterRacingServer(
-		grpcServer,
-		service.NewRacingService(
-			racesRepo,
-		),
-	)
+	racing.RegisterRacingServer(grpcServer, service.NewRacingService(racesRepo))
 
 	log.Infof("gRPC server listening on: %s", *grpcEndpoint)
 
