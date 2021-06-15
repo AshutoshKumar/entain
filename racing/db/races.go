@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"fmt"
 	"strconv"
 	"strings"
 	"sync"
@@ -19,12 +20,16 @@ type RacesRepo interface {
 
 	// List will return a list of races.
 	List(filter *racing.ListRacesRequestFilter) ([]*racing.Race, error)
+	// RaceById return single race detail.
+	RaceById(filter *racing.RaceByIdRequest) (*racing.Race, error)
 }
 
 type racesRepo struct {
 	db   *sql.DB
 	init sync.Once
 }
+
+
 
 // NewRacesRepo creates a new races repository.
 func NewRacesRepo(db *sql.DB) RacesRepo {
@@ -62,6 +67,27 @@ func (r *racesRepo) List(filter *racing.ListRacesRequestFilter) ([]*racing.Race,
 	return r.scanRaces(rows)
 }
 
+func (r *racesRepo) RaceById(filter *racing.RaceByIdRequest) (*racing.Race, error) {
+	var (
+		err   error
+		query string
+		args  []interface{}
+
+	)
+
+	query = getRaceQueries()[racesList]
+
+	query, args = r.applyRaceByIdFilter(query, filter)
+
+	rows, err := r.db.Query(query, args...)
+
+	if err != nil {
+		return nil, err
+	}
+	race, err := r.scanRaces(rows)
+	return race[0], err
+}
+
 func (r *racesRepo) applyFilter(query string, filter *racing.ListRacesRequestFilter) (string, []interface{}) {
 	var (
 		clauses []string
@@ -73,22 +99,26 @@ func (r *racesRepo) applyFilter(query string, filter *racing.ListRacesRequestFil
 	}
 
 	if len(filter.MeetingIds) > 0 {
-		clauses = append(clauses, "meeting_id IN ("+strings.Repeat("?,", len(filter.MeetingIds)-1)+"?)")
+		clauses = append(clauses, "meeting_id IN("+strings.Repeat("?,", len(filter.MeetingIds)-1)+"?)")
 
 		for _, meetingID := range filter.MeetingIds {
 			args = append(args, meetingID)
 		}
 	}
 
+	if filter.Visible {
+		clauses = append(clauses, "visible=("+strconv.FormatBool(filter.Visible)+") Order by advertised_start_time")
+	}
 
 	if len(clauses) != 0 {
+		clauses = append(clauses, "Order by advertised_start_time")
 		query += " WHERE " + strings.Join(clauses, " AND ")
 	}
 
 	return query, args
 }
 
-func (m *racesRepo) scanRaces(
+func (r *racesRepo) scanRaces(
 	rows *sql.Rows,
 ) ([]*racing.Race, error) {
 	var races []*racing.Race
@@ -107,6 +137,9 @@ func (m *racesRepo) scanRaces(
 
 		ts, err := ptypes.TimestampProto(advertisedStart)
 		if err != nil {
+			//"error converting date to timestamp proto")
+		}
+		if err != nil {
 			return nil, err
 		}
 
@@ -116,4 +149,26 @@ func (m *racesRepo) scanRaces(
 	}
 
 	return races, nil
+}
+
+func (r *racesRepo) applyRaceByIdFilter(query string, filter *racing.RaceByIdRequest) (string, []interface{}) {
+	var (
+		clauses []string
+		args    []interface{}
+	)
+
+	if filter == nil {
+		return query, args
+	}
+	matchId := fmt.Sprintf("%v", filter.Id)
+
+	if matchId != "" {
+		clauses = append(clauses, "meeting_id="+matchId+"")
+	}
+
+	if len(clauses) != 0 {
+		query += " WHERE " + strings.Join(clauses, " AND ")
+	}
+
+	return query, args
 }

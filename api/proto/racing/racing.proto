@@ -11,6 +11,10 @@ service Racing {
   rpc ListRaces(ListRacesRequest) returns (ListRacesResponse) {
     option (google.api.http) = { post: "/v1/list-races", body: "*" };
   }
+  // FindByDate method get all crosswords for a given date.
+  rpc RaceById(RaceByIdRequest) returns (RaceByIdResponse){
+    option (google.api.http) = { get: "/v1/race-by-id/{id}" };
+    }
 }
 
 /* Requests/Responses */
@@ -28,6 +32,7 @@ message ListRacesResponse {
 // Filter for listing races.
 message ListRacesRequestFilter {
   repeated int64 meeting_ids = 1;
+  bool visible = 2;
 }
 
 /* Resources */
@@ -42,8 +47,19 @@ message Race {
   string name = 3;
   // Number represents the number of the race.
   int64 number = 4;
-  // Visible represents whether or not the race is visible.
-  bool visible = 5;
   // AdvertisedStartTime is the time the race is advertised to run.
   google.protobuf.Timestamp advertised_start_time = 6;
+  // status
+  string status = 7;
+}
+
+
+// Request for Race bt ID.
+message RaceByIdRequest {
+   int64 id = 1;
+}
+
+// Response message based on passed ID's.
+message RaceByIdResponse {
+    Race races = 1;
 }
